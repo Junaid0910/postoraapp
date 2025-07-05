@@ -13,7 +13,7 @@ import {
   Menu,
   X
 } from "lucide-react";
-import CreatePostDialog from "@/components/create-post-dialog";
+import EnhancedCreatePostDialog from "@/components/enhanced-create-post-dialog";
 
 export default function Navigation() {
   const { user } = useAuth();
@@ -159,7 +159,7 @@ export default function Navigation() {
       </div>
 
       {/* Create Post Dialog */}
-      <CreatePostDialog 
+      <EnhancedCreatePostDialog 
         open={isCreatePostOpen} 
         onOpenChange={setIsCreatePostOpen}
       />

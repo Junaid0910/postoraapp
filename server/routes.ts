@@ -21,6 +21,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User profile routes
+  app.put('/api/users/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { username, bio, profileImageUrl } = req.body;
+      
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        email: req.user.claims.email,
+        firstName: req.user.claims.first_name,
+        lastName: req.user.claims.last_name,
+        profileImageUrl: profileImageUrl || req.user.claims.profile_image_url,
+        username,
+        bio,
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // User routes
   app.get('/api/users/:id', async (req, res) => {
     try {

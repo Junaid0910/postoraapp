@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Navigation from "@/components/navigation";
 import StreakCounter from "@/components/streak-counter";
-import LevelMap from "@/components/level-map";
+import EnhancedLevelMap from "@/components/enhanced-level-map";
 import PostCard from "@/components/post-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -173,7 +173,7 @@ export default function Home() {
                 <CardTitle className="text-lg">Your Journey Map</CardTitle>
               </CardHeader>
               <CardContent>
-                <LevelMap 
+                <EnhancedLevelMap 
                   currentLevel={user.level || 1}
                   posts={userPosts || []}
                 />

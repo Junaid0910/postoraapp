@@ -50,12 +50,16 @@ export const posts = pgTable("posts", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
   title: varchar("title").notNull(),
-  category: varchar("category").notNull(), // travel, food, fitness, etc.
+  category: varchar("category").notNull(),
   isPublic: boolean("is_public").default(true),
   level: integer("level").notNull(),
-  imageUrl: varchar("image_url"),
+  mediaUrls: text("media_urls").array().default([]), // Array of image/video URLs
+  mediaType: varchar("media_type").default("text"), // text, image, video, reel, location
+  location: text("location"), // JSON string for location data
+  tags: text("tags").array().default([]), // Array of hashtags
   likesCount: integer("likes_count").default(0),
   commentsCount: integer("comments_count").default(0),
+  sharesCount: integer("shares_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   postDate: date("post_date").notNull(),
 });
@@ -164,6 +168,7 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   createdAt: true,
   likesCount: true,
   commentsCount: true,
+  sharesCount: true,
 });
 
 export const insertFollowSchema = createInsertSchema(follows).omit({

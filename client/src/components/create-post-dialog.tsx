@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { PREDEFINED_CATEGORIES, searchCategories } from "@shared/categories";
 import {
   Dialog,
   DialogContent,
@@ -25,14 +26,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { 
+  Loader2, 
+  Camera, 
+  Video, 
+  MapPin, 
+  Hash,
+  Image as ImageIcon,
+  X,
+  Check,
+  ChevronsUpDown
+} from "lucide-react";
 
 const createPostSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be under 100 characters"),
@@ -40,6 +57,10 @@ const createPostSchema = z.object({
   category: z.string().min(1, "Category is required"),
   isPublic: z.boolean().default(true),
   level: z.number().min(1),
+  mediaType: z.enum(["text", "image", "video", "reel", "location"]).default("text"),
+  mediaUrls: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  location: z.string().optional(),
 });
 
 type CreatePostFormData = z.infer<typeof createPostSchema>;
@@ -53,6 +74,12 @@ export default function CreatePostDialog({ open, onOpenChange }: CreatePostDialo
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreatePostFormData>({
     resolver: zodResolver(createPostSchema),
@@ -61,7 +88,11 @@ export default function CreatePostDialog({ open, onOpenChange }: CreatePostDialo
       content: "",
       category: "",
       isPublic: true,
-      level: (user?.level || 1) + 1,
+      level: ((user?.level || 1) + 1),
+      mediaType: "text",
+      mediaUrls: [],
+      tags: [],
+      location: "",
     },
   });
 
@@ -74,11 +105,15 @@ export default function CreatePostDialog({ open, onOpenChange }: CreatePostDialo
         title: "Success",
         description: "Your post has been created successfully!",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/posts/user/" + user?.id] });
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ["/api/posts/user/" + user.id] });
+        queryClient.invalidateQueries({ queryKey: ["/api/analytics/user/" + user.id] });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/posts/public"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/user/" + user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       form.reset();
+      setSelectedTags([]);
+      setCurrentTag("");
       onOpenChange(false);
     },
     onError: (error) => {
@@ -102,18 +137,43 @@ export default function CreatePostDialog({ open, onOpenChange }: CreatePostDialo
   });
 
   const onSubmit = (data: CreatePostFormData) => {
-    createPostMutation.mutate(data);
+    const finalData = {
+      ...data,
+      tags: selectedTags,
+    };
+    createPostMutation.mutate(finalData);
   };
 
-  const categories = [
-    { value: "travel", label: "Travel" },
-    { value: "food", label: "Food" },
-    { value: "fitness", label: "Fitness" },
-    { value: "lifestyle", label: "Lifestyle" },
-    { value: "work", label: "Work" },
-    { value: "social", label: "Social" },
-    { value: "other", label: "Other" },
-  ];
+  const handleFileUpload = (files: FileList | null, type: "image" | "video") => {
+    if (!files) return;
+    
+    // In a real app, you would upload these files to a cloud storage service
+    // For now, we'll just show a placeholder URL
+    const urls = Array.from(files).map((_, index) => 
+      `https://placeholder-${type}-${Date.now()}-${index}.com`
+    );
+    
+    form.setValue("mediaUrls", urls);
+    form.setValue("mediaType", type);
+    
+    toast({
+      title: "Files Selected",
+      description: `${files.length} ${type}(s) selected for upload`,
+    });
+  };
+
+  const addTag = () => {
+    if (currentTag.trim() && !selectedTags.includes(currentTag.trim())) {
+      setSelectedTags([...selectedTags, currentTag.trim()]);
+      setCurrentTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const filteredCategories = searchCategories(categorySearch);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

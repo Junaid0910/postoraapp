@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import EditProfileDialog from "@/components/edit-profile-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -10,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Settings, MapPin, Calendar, Users, Award } from "lucide-react";
+import { useState } from "react";
 import type { Post } from "@shared/schema";
 
 export default function Profile() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -94,7 +97,11 @@ export default function Profile() {
                     </h1>
                     <p className="text-gray-600 text-lg">@{user.username}</p>
                   </div>
-                  <Button variant="outline" className="mt-4 md:mt-0">
+                  <Button 
+                    variant="outline" 
+                    className="mt-4 md:mt-0"
+                    onClick={() => setIsEditProfileOpen(true)}
+                  >
                     <Settings className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
@@ -196,6 +203,12 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog 
+        open={isEditProfileOpen} 
+        onOpenChange={setIsEditProfileOpen}
+      />
     </div>
   );
 }

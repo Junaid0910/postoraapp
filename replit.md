@@ -97,7 +97,8 @@ Postora is a full-stack social media application that combines the best features
 
 ## Changelog
 
-- July 05, 2025. Initial setup
+- July 05, 2025. Initial setup with basic social media features
+- July 05, 2025. Enhanced with multimedia posting (camera/video), infinite categories with search, Candy Crush-style level map, and edit profile functionality
 
 ## User Preferences
 
