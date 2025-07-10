@@ -11,7 +11,8 @@ import {
   Plus, 
   User,
   Menu,
-  X
+  X,
+  Video
 } from "lucide-react";
 import EnhancedCreatePostDialog from "@/components/enhanced-create-post-dialog";
 
@@ -26,6 +27,7 @@ export default function Navigation() {
   const navItems = [
     { path: "/", label: "Home", icon: Home },
     { path: "/explore", label: "Explore", icon: Compass },
+    { path: "/reels", label: "Reels", icon: Video },
     { path: "/analytics", label: "Analytics", icon: BarChart3 },
     { path: "/profile", label: "Profile", icon: User },
   ];

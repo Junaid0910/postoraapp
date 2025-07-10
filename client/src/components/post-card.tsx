@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, UserPlus, Lock, Globe } from "lucide-react";
+import { Heart, MessageCircle, UserPlus, Lock, Globe, Play } from "lucide-react";
+import CommentsSection from "@/components/comments-section";
 import type { Post, User } from "@shared/schema";
 
 interface PostCardProps {
@@ -19,6 +20,8 @@ interface PostCardProps {
 export default function PostCard({ post, user, showUser = false }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -33,6 +36,10 @@ export default function PostCard({ post, user, showUser = false }: PostCardProps
     onSuccess: () => {
       setIsLiked(!isLiked);
       setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+      if (!isLiked) {
+        setShowHeartAnimation(true);
+        setTimeout(() => setShowHeartAnimation(false), 1000);
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/posts/public"] });
     },
     onError: (error) => {
@@ -151,6 +158,69 @@ export default function PostCard({ post, user, showUser = false }: PostCardProps
             
             <p className="text-gray-600 text-sm mb-2">{post.content}</p>
             
+            {/* Media Display */}
+            {post.mediaUrls && post.mediaUrls.length > 0 && (
+              <div className="mb-3 relative">
+                {post.mediaType === 'video' ? (
+                  <div className="relative rounded-lg overflow-hidden bg-black">
+                    <video 
+                      src={post.mediaUrls[0]} 
+                      controls 
+                      className="w-full max-h-96 object-contain"
+                      poster={post.mediaUrls[1] || undefined}
+                    />
+                    <div className="absolute top-2 left-2">
+                      <Play className="w-5 h-5 text-white bg-black/50 rounded-full p-1" />
+                    </div>
+                    {/* Heart animation overlay for videos */}
+                    {showHeartAnimation && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Heart className="w-16 h-16 text-red-500 fill-red-500 animate-ping" />
+                      </div>
+                    )}
+                  </div>
+                ) : post.mediaType === 'image' && (
+                  <div className="relative">
+                    <img 
+                      src={post.mediaUrls[0]} 
+                      alt={post.title}
+                      className="w-full max-h-96 object-cover rounded-lg"
+                    />
+                    {/* Heart animation overlay for images */}
+                    {showHeartAnimation && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Heart className="w-16 h-16 text-red-500 fill-red-500 animate-ping" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {post.mediaUrls.length > 1 && post.mediaType === 'image' && (
+                  <div className="grid grid-cols-2 gap-1 mt-1">
+                    {post.mediaUrls.slice(1, 4).map((url, index) => (
+                      <img 
+                        key={index}
+                        src={url} 
+                        alt={`${post.title} ${index + 2}`}
+                        className="w-full h-24 object-cover rounded"
+                      />
+                    ))}
+                    {post.mediaUrls.length > 4 && (
+                      <div className="relative">
+                        <img 
+                          src={post.mediaUrls[4]} 
+                          alt="More images"
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
+                          <span className="text-white font-bold">+{post.mediaUrls.length - 4}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <span>{formatDate(post.createdAt)}</span>
@@ -162,10 +232,13 @@ export default function PostCard({ post, user, showUser = false }: PostCardProps
                   <Heart className={`w-4 h-4 ${isLiked ? 'fill-coral text-coral' : ''}`} />
                   <span>{likesCount}</span>
                 </button>
-                <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setShowComments(true)}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-coral transition-colors"
+                >
                   <MessageCircle className="w-4 h-4" />
                   <span>{post.commentsCount || 0}</span>
-                </div>
+                </button>
               </div>
               
               {showUser && (
@@ -184,6 +257,12 @@ export default function PostCard({ post, user, showUser = false }: PostCardProps
           </div>
         </div>
       </CardContent>
+      
+      <CommentsSection 
+        postId={post.id}
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+      />
     </Card>
   );
 }

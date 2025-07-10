@@ -1,7 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { Calendar, Heart, MessageCircle, X, Globe, Lock } from "lucide-react";
 import type { Post } from "@shared/schema";
 import { getCategoryIcon } from "@shared/categories";
 
@@ -11,6 +14,7 @@ interface EnhancedLevelMapProps {
 }
 
 export default function EnhancedLevelMap({ currentLevel, posts }: EnhancedLevelMapProps) {
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const levelData = useMemo(() => {
     // Create a comprehensive level progression
     const maxDisplayLevels = Math.max(currentLevel + 5, 20);
@@ -160,13 +164,17 @@ export default function EnhancedLevelMap({ currentLevel, posts }: EnhancedLevelM
                         }`} />
                       )}
                       
-                      <div className={`
-                        relative w-16 h-16 rounded-full border-2 flex items-center justify-center 
-                        text-white font-bold cursor-pointer transition-all duration-300
-                        hover:scale-110 hover:z-10
-                        ${getLevelColor(levelInfo.level, levelInfo.unlocked)}
-                        ${isMilestone ? 'ring-4 ring-yellow-300 ring-opacity-50' : ''}
-                      `}>
+                      <div 
+                        className={`
+                          relative w-16 h-16 rounded-full border-2 flex items-center justify-center 
+                          text-white font-bold cursor-pointer transition-all duration-300
+                          hover:scale-110 hover:z-10
+                          ${getLevelColor(levelInfo.level, levelInfo.unlocked)}
+                          ${isMilestone ? 'ring-4 ring-yellow-300 ring-opacity-50' : ''}
+                          ${levelInfo.post ? 'hover:ring-2 hover:ring-white' : ''}
+                        `}
+                        onClick={() => levelInfo.post && setSelectedPost(levelInfo.post)}
+                      >
                         {isMilestone && (
                           <div className="absolute -top-2 -right-2 text-lg">
                             {getMilestoneIcon(milestone)}
@@ -275,6 +283,127 @@ export default function EnhancedLevelMap({ currentLevel, posts }: EnhancedLevelM
           }
         </p>
       </div>
+
+      {/* Post Detail Dialog */}
+      <Dialog open={!!selectedPost} onOpenChange={() => setSelectedPost(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Level {selectedPost?.level} Post</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedPost(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedPost && (
+            <div className="space-y-4">
+              {/* Post Header */}
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-coral to-plum rounded-full flex items-center justify-center text-white font-bold">
+                  L{selectedPost.level}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedPost.title}</h3>
+                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <Calendar className="w-4 h-4" />
+                    <span>{format(new Date(selectedPost.createdAt), 'MMM d, yyyy')}</span>
+                    <Badge className="bg-coral text-white">
+                      {selectedPost.category}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Media Display */}
+              {selectedPost.mediaUrls && selectedPost.mediaUrls.length > 0 && (
+                <div className="space-y-2">
+                  {selectedPost.mediaType === 'video' ? (
+                    <video 
+                      src={selectedPost.mediaUrls[0]} 
+                      controls 
+                      className="w-full max-h-64 object-contain rounded-lg bg-black"
+                      poster={selectedPost.mediaUrls[1] || undefined}
+                    />
+                  ) : (
+                    <div className="grid gap-2">
+                      <img 
+                        src={selectedPost.mediaUrls[0]} 
+                        alt={selectedPost.title}
+                        className="w-full max-h-64 object-cover rounded-lg"
+                      />
+                      {selectedPost.mediaUrls.length > 1 && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {selectedPost.mediaUrls.slice(1, 4).map((url, index) => (
+                            <img 
+                              key={index}
+                              src={url} 
+                              alt={`${selectedPost.title} ${index + 2}`}
+                              className="w-full h-20 object-cover rounded"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Post Content */}
+              <div className="space-y-3">
+                <p className="text-gray-700">{selectedPost.content}</p>
+                
+                {/* Post Stats */}
+                <div className="flex items-center space-x-4 text-sm text-gray-500 border-t pt-3">
+                  <div className="flex items-center space-x-1">
+                    <Heart className="w-4 h-4" />
+                    <span>{selectedPost.likesCount || 0} likes</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{selectedPost.commentsCount || 0} comments</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    {selectedPost.isPublic ? (
+                      <>
+                        <Globe className="w-4 h-4" />
+                        <span>Public</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Private</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                {selectedPost.tags && selectedPost.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedPost.tags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Location */}
+                {selectedPost.location && (
+                  <div className="text-sm text-gray-600">
+                    📍 {selectedPost.location}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

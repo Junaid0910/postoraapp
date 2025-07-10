@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import Analytics from "@/pages/analytics";
 import Explore from "@/pages/explore";
+import Reels from "@/pages/reels";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
           <Route path="/profile" component={Profile} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/explore" component={Explore} />
+          <Route path="/reels" component={Reels} />
         </>
       )}
       <Route component={NotFound} />
